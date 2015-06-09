@@ -49,20 +49,32 @@ void Strategy_Invalidate(struct Cache *pcache)
     Cache_List_Clear( (struct Cache_List *) ( (pcache)->pstrategy ) );
 }
 
-/*! 
- * RAND : On prend le premier bloc invalide. S'il n'y en a plus, on prend un bloc au hasard.
+/*!
+ * //! Algorithme de remplacement de bloc.
+ * @author Ulysse Riccio
  */
 struct Cache_Block_Header *Strategy_Replace_Block(struct Cache *pcache)
 {
-    int ib;
+
     struct Cache_Block_Header *pbh;
+    struct Cache_List *lru_list = (struct Cache_List *) ( (pcache)->pstrategy );
 
     /* On cherche d'abord un bloc invalide */
-    if ((pbh = Get_Free_Block(pcache)) != NULL) return pbh;
+    if ((pbh = Get_Free_Block(pcache)) != NULL)
+    {
+        /*! Insertion d'un élément à la fin */
+        // Les blocs invalides a mettre dans la queue
+        Cache_List_Append(lru_list, pbh);
+        return pbh;
+    }
 
-    /* Sinon on tire un numéro de bloc au hasard */
-    ib = RANDOM(0, pcache->nblocks);
-    return &pcache->headers[ib];
+    /*! Retrait du premier élément */
+    // Sinon on prend le premier bloc de la liste LRU et on le déplace à la fin
+    pbh = Cache_List_Remove_First(lru_list);
+    /*! Insertion d'un élément à la fin */
+    Cache_List_Append(lru_list, pbh);
+
+    return pbh;
 }
 
 
