@@ -77,10 +77,13 @@ void Strategy_Read(struct Cache *pcache, struct Cache_Block_Header *pbh)
 }
 
 /*!
- * RAND : Rien à faire ici.
+ * //! Fonction "réflexe" lors de l'écriture.
+ * @author Ulysse Riccio
  */
 void Strategy_Write(struct Cache *pcache, struct Cache_Block_Header *pbh)
 {
+    // on fait la meme chose que dans la lecture
+    Cache_List_Move_To_End(  (struct Cache_List *) ( (pcache)->pstrategy ) , pbh);
 }
 
 //@author Ulysse Riccio
