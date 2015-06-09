@@ -18,6 +18,7 @@
 
 /*!
  * //! Creation et initialisation de la stratégie (invoqué par la création de cache).
+ * //@author Ulysse Riccio
  * */
 void *Strategy_Create(struct Cache *pcache)
 {
