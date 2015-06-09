@@ -35,14 +35,18 @@ void Strategy_Close(struct Cache *pcache)
     /*! Destruction d'une liste de blocs */
     // prend en parametre cache_list donc typage depuis pstrategy
     // //!< Structure de données dépendant de la stratégie
-    Cache_List_Delete( ( (struct Cache_List *) ( (pcache)->pstrategy ) ) );
+    Cache_List_Delete( (struct Cache_List *) ( (pcache)->pstrategy ) );
+    //(struct Cache_List *) ( (pcache)->pstrategy ) extrement utile
 }
 
 /*!
- * RAND : Rien à faire ici.
+ * //! Fonction "réflexe" lors de l'invalidation du cache.
+ * @author Ulysse Riccio
  */
 void Strategy_Invalidate(struct Cache *pcache)
 {
+    /*! Remise en l'état de liste vide */
+    Cache_List_Clear( (struct Cache_List *) ( (pcache)->pstrategy ) );
 }
 
 /*! 
