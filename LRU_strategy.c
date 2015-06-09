@@ -67,10 +67,13 @@ struct Cache_Block_Header *Strategy_Replace_Block(struct Cache *pcache)
 
 
 /*!
- * RAND : Rien à faire ici.
+ * //! Fonction "réflexe" lors de la lecture.
+ * @author Ulysse Riccio
  */
 void Strategy_Read(struct Cache *pcache, struct Cache_Block_Header *pbh)
 {
+    /*! Transférer un élément à la fin */
+    Cache_List_Move_To_End(  (struct Cache_List *) ( (pcache)->pstrategy ) , pbh);
 }
 
 /*!
