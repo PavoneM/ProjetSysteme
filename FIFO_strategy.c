@@ -17,29 +17,24 @@
 
 /*!
  *
- *
- * En fait, nous initialisons le germe
- * (seed) du générateur aléatoire à quelque chose d'éminemment variable, pour
- * éviter d'avoir la même séquence à chque exécution...
+ *Création et initialisation d'une nouvelle liste vide en retournant un pointeur dessus
  */
-void *Strategy_Create(struct Cache *pcache)
-{
+void *Strategy_Create(struct Cache *pcache) {
+    return Cache_List_Create();
+}
 
-    return NULL;
+/*!
+ * Fermeture de la stratégie
+ */
+void Strategy_Close(struct Cache *pcache) {
+    Cache_List_Delete((struct Cache_List *)((pcache)->pstrategy));
 }
 
 /*!
  *
  */
-void Strategy_Close(struct Cache *pcache)
-{
-}
-
-/*!
- *
- */
-void Strategy_Invalidate(struct Cache *pcache)
-{
+void Strategy_Invalidate(struct Cache *pcache) {
+    Cache_List_Clear((struct Cache_List *)((pcache)->pstrategy));
 }
 
 /*!
@@ -47,27 +42,37 @@ void Strategy_Invalidate(struct Cache *pcache)
  */
 struct Cache_Block_Header *Strategy_Replace_Block(struct Cache *pcache)
 {
-    int ib;
     struct Cache_Block_Header *pbh;
+    struct Cache_List *fifo_list = (struct Cache_List *)((pcache)->pstrategy);
 
-    /* On cherche d'abord un bloc invalide */
-    if ((pbh = Get_Free_Block(pcache)) != NULL) return pbh;
+    // On regarde si il reste un bloc libre (invalide)
 
-    /* Sinon on tire un numéro de bloc le plus vieux */
-    // A remplir
-        return NULL;
+    if ((pbh = Get_Free_Block(pcache)) != NULL) {
+
+        // On rajoute un élèment dans la liste car il reste de la place dans la liste
+        // On insert l'élément à la fin
+        Cache_List_Append(fifo_list, pbh);
+        return pbh;
+    }
+
+    // Dans le cas ou la liste est complète, on déplace le premier bloc de fifo_list à la fin de la liste
+
+    pbh = Cache_List_Remove_First(fifo_list);
+    Cache_List_Append(fifo_list, pbh);
+
+    return pbh;
 }
 
 
 /*!
- *
+ * Aucun changement lorsqu'on read
  */
 void Strategy_Read(struct Cache *pcache, struct Cache_Block_Header *pbh)
 {
 }
 
 /*!
- *
+ *  Aucun changement lorsqu'on write
  */
 void Strategy_Write(struct Cache *pcache, struct Cache_Block_Header *pbh)
 {
