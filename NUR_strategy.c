@@ -1,7 +1,7 @@
 /*!
- * \file RAND_strategy.c
+ * \file NUR_strategy.c
  *
- * \brief  Stratégie de remplacement au hasard..
+ * \brief  Stratégie de remplacement NUR.
  * 
  * \author Ulysse RICCIO
  *
@@ -12,8 +12,6 @@
 
 #include "strategy.h"
 #include "low_cache.h"
-#include "random.h"
-#include "time.h"
 
 /*!
  * RAND : pas grand chose à faire ici. 
@@ -73,7 +71,9 @@ void Strategy_Write(struct Cache *pcache, struct Cache_Block_Header *pbh)
 {
 }
 
+//@author Ulysse Riccio
+//Retourne nom de la stratégie utilisée ici nur
 char *Strategy_Name()
 {
-    return "RAND";
+    return "NUR";
 }
