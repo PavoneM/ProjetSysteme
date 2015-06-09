@@ -27,11 +27,15 @@ void *Strategy_Create(struct Cache *pcache)
 }
 
 /*!
- * RAND : Rien à faire ici.
+ * //! Fermeture de la stratégie.
+ * //@author Ulysse Riccio
  */
 void Strategy_Close(struct Cache *pcache)
 {
-
+    /*! Destruction d'une liste de blocs */
+    // prend en parametre cache_list donc typage depuis pstrategy
+    // //!< Structure de données dépendant de la stratégie
+    Cache_List_Delete( ( (struct Cache_List *) ( (pcache)->pstrategy ) ) );
 }
 
 /*!
