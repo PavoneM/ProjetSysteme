@@ -17,22 +17,17 @@
 
 /*!
  *
- *
- * En fait, nous initialisons le germe
- * (seed) du générateur aléatoire à quelque chose d'éminemment variable, pour
- * éviter d'avoir la même séquence à chque exécution...
+ *Création et initialisation d'une nouvelle liste vide en retournant un pointeur dessus
  */
-void *Strategy_Create(struct Cache *pcache)
-{
-
-    return NULL;
+void *Strategy_Create(struct Cache *pcache) {
+    return Cache_List_Create();
 }
 
 /*!
- *
+ * Fermeture de la stratégie
  */
-void Strategy_Close(struct Cache *pcache)
-{
+void Strategy_Close(struct Cache *pcache) {
+    Cache_List_Delete((struct Cache_List *)((pcache)->pstrategy));
 }
 
 /*!
