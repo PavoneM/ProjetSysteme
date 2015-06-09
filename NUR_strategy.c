@@ -13,6 +13,12 @@
 #include "strategy.h"
 #include "low_cache.h"
 
+typedef struct
+{
+    int unsigned nderef;
+    int unsigned compteur;
+} NUR;
+
 /*!
  * RAND : pas grand chose à faire ici. 
  *
