@@ -55,7 +55,6 @@ void Strategy_Invalidate(struct Cache *pcache)
  */
 struct Cache_Block_Header *Strategy_Replace_Block(struct Cache *pcache)
 {
-
     struct Cache_Block_Header *pbh;
     struct Cache_List *lru_list = (struct Cache_List *) ( (pcache)->pstrategy );
 
