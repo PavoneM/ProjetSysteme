@@ -1,7 +1,7 @@
 /*!
  * \file LRU_strategy.c
  *
- * \brief  Stratégie de remplacement au hasard..
+ * \brief  Stratégie de remplacement LRU..
  * 
  * \author Ulysse RICCIO
  *
@@ -13,17 +13,16 @@
 #include "strategy.h"
 #include "low_cache.h"
 
+//on utilise les fonctions de cache_list
+#include "cache_list.h"
+
 /*!
- * RAND : pas grand chose à faire ici. 
- *
- * En fait, nous initialisons le germe
- * (seed) du générateur aléatoire à quelque chose d'éminemment variable, pour
- * éviter d'avoir la même séquence à chque exécution...
- */
+ * //! Creation et initialisation de la stratégie (invoqué par la création de cache).
+ * */
 void *Strategy_Create(struct Cache *pcache)
 {
-    // srand((unsigned int)time(NULL));
-    return NULL;
+    /** Crée et initialise une nouvelle liste (vide) et retourne un pointeur dessus */
+    return Cache_List_Create();
 }
 
 /*!
@@ -31,6 +30,7 @@ void *Strategy_Create(struct Cache *pcache)
  */
 void Strategy_Close(struct Cache *pcache)
 {
+
 }
 
 /*!
