@@ -88,17 +88,52 @@ struct Cache_Block_Header *Strategy_Replace_Block(struct Cache *pcache)
 
 
 /*!
- * RAND : Rien à faire ici.
+  * //! Fonction "réflexe" lors de la lecture.
+ * @author Ulysse Riccio
  */
 void Strategy_Read(struct Cache *pcache, struct Cache_Block_Header *pbh)
 {
+    NUR * nur = (NUR *) ( (pcache)->pstrategy );
+    unsigned short int ir_cache;
+
+    // si deref = 0 on sort
+    if ( nur->nderef == 0 or ( nur->compteur ) - 1 > 0)
+        return;
+
+    //on remet le bit R a 0
+    for (ir_cache = 0; ir_cache < pcache->nblocks; ir_cache++)
+        pcache->headers[ir_cache].flags = pcache->headers[ir_cache].flags && not(0x4);
+
+    // on reinitialise le compteur
+    nur->compteur = nur->nderef;
+    ++ (pcache->instrument.n_deref); //!< Instrumentation du cache
+
+    pbh->flags = pbh->flags or REFER;
 }
 
 /*!
- * RAND : Rien à faire ici.
+  * //! Fonction "réflexe" lors de l'écriture.
+ * @author Ulysse Riccio
+ * meme chose que pour read
  */
 void Strategy_Write(struct Cache *pcache, struct Cache_Block_Header *pbh)
 {
+    NUR * nur = (NUR *) ( (pcache)->pstrategy );
+    unsigned short int ir_cache;
+
+    // si deref = 0 on sort
+    if ( nur->nderef == 0 or ( nur->compteur ) - 1 > 0)
+        return;
+
+    //on remet le bit R a 0
+    for (ir_cache = 0; ir_cache < pcache->nblocks; ir_cache++)
+        pcache->headers[ir_cache].flags = pcache->headers[ir_cache].flags && not(0x4);
+
+    // on reinitialise le compteur
+    nur->compteur = nur->nderef;
+    ++ (pcache->instrument.n_deref); //!< Instrumentation du cache
+
+    pbh->flags = pbh->flags or REFER;
 }
 
 //@author Ulysse Riccio
