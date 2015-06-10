@@ -44,10 +44,30 @@ void Strategy_Close(struct Cache *pcache)
 }
 
 /*!
- * RAND : Rien à faire ici.
+  * //! Fonction "réflexe" lors de l'invalidation du cache.
+ * @author Ulysse Riccio
  */
 void Strategy_Invalidate(struct Cache *pcache)
 {
+    NUR * nur = (NUR *) ( (pcache)->pstrategy );
+    unsigned short int ir_cache;
+
+    if (nur->nderef != 0)
+    {
+        nur->compteur = 1;
+
+        // si deref = 0 on sort
+        if ( nur->nderef == 0 or ( nur->compteur ) - 1 > 0)
+            return;
+
+        //on remet le bit R a 0
+        for (ir_cache = 0; ir_cache < pcache->nblocks; ir_cache++)
+            pcache->headers[ir_cache].flags = pcache->headers[ir_cache].flags && not(0x4);
+
+        // on reinitialise le compteur
+        nur->compteur = nur->nderef;
+        ++ (pcache->instrument.n_deref); //!< Instrumentation du cache
+    }
 }
 
 /*! 
