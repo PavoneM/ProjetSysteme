@@ -120,7 +120,7 @@ void Cache_List_Clear(struct Cache_List *list) {
 /*! Test de liste vide */
 bool Cache_List_Is_Empty(struct Cache_List *list) {
 	
-	if (list->next != list->prev)
+	if (list->prev != list->next)
 		return false;
 	return true;
 	
@@ -155,8 +155,6 @@ int main() {
 	struct Cache_Block_Header *pbh = (struct Cache_Block_Header*) malloc(sizeof(struct Cache_Block_Header));
 	struct Cache_Block_Header *pbh2 = (struct Cache_Block_Header*) malloc(sizeof(struct Cache_Block_Header));
 	Cache_List_Append(c,pbh);
-	x = Cache_List_Is_Empty(c);
-	printf(x ? "liste vide\n" : "liste non vide\n");
 	Cache_List_Append(c,pbh2);
 	
 	int cpt = 0;
