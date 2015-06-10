@@ -23,16 +23,13 @@ struct Cache_List *Cache_List_Create() {
 
 /** Détruit la liste pointée par list */
 void Cache_List_Delete(struct Cache_List *list) {
-	 struct Cache_List* cur = list;
+	 struct Cache_List* cur;
 	
-	while(cur->next){
-		/* on va à la fin de la liste */
-		cur = cur->next;
-	}
+	for (cur = list; cur->next != NULL; cur = cur->next) {/*on va à la fin de la liste */}
 	
-	while(cur->prev){
-		//On part de la fin de la liste pour supprimer tous les éléments 
+	while(cur){
 		cur = cur->prev;
+		//On part de la fin de la liste pour supprimer tous les éléments 
 		free(cur->next);
 	}
 	
@@ -41,16 +38,10 @@ void Cache_List_Delete(struct Cache_List *list) {
 
 /*! Insertion d'un élément à la fin */
 void Cache_List_Append(struct Cache_List *list, struct Cache_Block_Header *pbh) {
-	struct Cache_List *cur = list;
+	struct Cache_List *cur;
 	struct Cache_List *new = (struct Cache_List*) malloc(sizeof(struct Cache_List));
-	
-	if (Cache_List_Is_Empty(list)) {
-		list->pheader = pbh;
-	}
-	
-	while (cur->next) {
-		cur  = cur->next;
-		/*on va à la fin de la liste*/}
+
+	for (cur = list; cur->next != NULL; cur = cur->next) {/*on va à la fin de la liste */}
 	
 	//on refait les chaînages
 	new->next = NULL;
@@ -73,7 +64,7 @@ void Cache_List_Prepend(struct Cache_List *list, struct Cache_Block_Header *pbh)
 	new->next = list;
 	new->prev = NULL;
 	
-	while (cur->prev) {
+	while (cur) {
 	/*on se place tout au début de la liste*/
 		cur = cur->prev;
 	}
@@ -85,7 +76,7 @@ struct Cache_Block_Header *Cache_List_Remove_First(struct Cache_List *list) {
 		struct Cache_List *cur = list;
 		struct Cache_Block_Header *header; //header du premier élément de la liste
 
-		while (cur->prev) {
+		while (cur) {
 			cur = cur->prev;
 			/*on se place tout au début de la liste*/}
 		
@@ -101,15 +92,13 @@ struct Cache_Block_Header *Cache_List_Remove_First(struct Cache_List *list) {
 
 /*! Retrait du dernier élément */
 struct Cache_Block_Header *Cache_List_Remove_Last(struct Cache_List *list) {
-		struct Cache_List *cur = list;
+		struct Cache_List *cur;
 		struct Cache_Block_Header *header; //header du dernier élément de la liste
 		
 		if (Cache_List_Is_Empty(list))
 			return NULL;
-		
-		while (cur->next) {
-			/*on va à la fin de la liste */
-			cur = cur->next;}
+			
+		for (cur = list; cur->next != NULL; cur = cur->next) {/*on va à la fin de la liste */}
 
 		//on refait les chaînages...
 		header = cur->pheader;
@@ -145,7 +134,7 @@ void Cache_List_Clear(struct Cache_List *list) {
 
 /*! Test de liste vide */
 bool Cache_List_Is_Empty(struct Cache_List *list) {
-	return (list->pheader == NULL);
+	return ((list->next == NULL) || (list->next->pheader == NULL));	
 }
 
 /*! Transférer un élément à la fin */

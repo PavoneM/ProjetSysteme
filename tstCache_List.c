@@ -17,46 +17,30 @@ struct Cache_List *Cache_List_Create() {
 
 /** Détruit la liste pointée par list */
 void Cache_List_Delete(struct Cache_List *list) {
-	 struct Cache_List* cur = list;
+	 struct Cache_List* cur;
 	
-	while(cur = cur->next){/* on va à la fin de la liste */}
+	for (cur = list; cur->next != NULL; cur = cur->next) {/*on va à la fin de la liste */}
 	
-	while(cur = cur->prev){
+	while(cur){
+		cur = cur->prev;
 		//On part de la fin de la liste pour supprimer tous les éléments 
 		free(cur->next);
 	}
-	
 	free(cur); 
 }
 
 /*! Insertion d'un élément à la fin */
 void Cache_List_Append(struct Cache_List *list, struct Cache_Block_Header *pbh) {
-	struct Cache_List *cur = list;
+	struct Cache_List *cur;
 	struct Cache_List *new = (struct Cache_List*) malloc(sizeof(struct Cache_List));
 
-	if(list->pheader==NULL)
-			printf("Liste null\n");
+	for (cur = list; cur->next != NULL; cur = cur->next) {/*on va à la fin de la liste */}
 	
-	if (Cache_List_Is_Empty(list)) {
-		printf("Premier element\n");
-		list->pheader = pbh;
-		if(list->pheader!=NULL)
-			printf("Liste pas null\n");
-		return;
-	}
-	
-	while (cur->next) {
-		cur  = cur->next;
-		/*on va à la fin de la liste*/
-	}
-	printf("test");
 	//on refait les chaînages
 	new->next = NULL;
 	new->prev = cur;
 	new->pheader = pbh;
 	cur->next=new;
-	if(!cur->next)
-		printf("Le next est null\n");
 }
 
 /*! Insertion d'un élément au début*/
@@ -69,7 +53,10 @@ void Cache_List_Prepend(struct Cache_List *list, struct Cache_Block_Header *pbh)
 	new->next = list;
 	new->prev = NULL;
 	
-	while (cur = cur->prev) {/*on se place tout au début de la liste*/}
+	while (cur) {
+		/*on se place tout au début de la liste*/
+		cur = cur->prev;
+	}
 	cur->prev = new;
 }
 
@@ -78,7 +65,10 @@ struct Cache_Block_Header *Cache_List_Remove_First(struct Cache_List *list) {
 		struct Cache_List *cur = list;
 		struct Cache_Block_Header *header; //header du premier élément de la liste
 
-		while (cur = cur->prev) {/*on se place tout au début de la liste*/}
+		while (cur) {
+			/*on se place tout au début de la liste*/
+			cur = cur->prev;
+		}
 		
 		if (Cache_List_Is_Empty(list))
 			return NULL;
@@ -92,14 +82,14 @@ struct Cache_Block_Header *Cache_List_Remove_First(struct Cache_List *list) {
 
 /*! Retrait du dernier élément */
 struct Cache_Block_Header *Cache_List_Remove_Last(struct Cache_List *list) {
-		struct Cache_List *cur = list;
+		struct Cache_List *cur;
 		struct Cache_Block_Header *header; //header du dernier élément de la liste
 		
 		if (Cache_List_Is_Empty(list))
 			return NULL;
 		
-		while (cur = cur->next) {/*on va à la fin de la liste */}
-
+		for (cur = list; cur->next != NULL; cur = cur->next) {/*on va à la fin de la liste */}
+		
 		//on refait les chaînages...
 		header = cur->pheader;
 		(cur->prev)->next = NULL;
@@ -134,7 +124,7 @@ void Cache_List_Clear(struct Cache_List *list) {
 
 /*! Test de liste vide */
 bool Cache_List_Is_Empty(struct Cache_List *list) {
-	return (list->pheader == NULL);
+	return ((list->next == NULL) || (list->next->pheader == NULL));
 }
 
 
@@ -153,25 +143,31 @@ void Cache_List_Move_To_Begin(struct Cache_List *list,
 }
 
 int main() {
+	
 	printf("Création cache_list\n");
-	struct Cache_List *c = Cache_List_Create();
+	struct Cache_List *c = Cache_List_Create();	
 	bool x = Cache_List_Is_Empty(c);
-	printf("%d\n", x);
+	printf	(x ? "liste vide\n" : "liste pas vide\n");
 	printf("Ajout élément\n");
 	struct Cache_Block_Header *pbh = (struct Cache_Block_Header*) malloc(sizeof(struct Cache_Block_Header));
 	struct Cache_Block_Header *pbh2 = (struct Cache_Block_Header*) malloc(sizeof(struct Cache_Block_Header));
-	//struct Cache_Block_Header *pbh3 = (struct Cache_Block_Header*) malloc(sizeof(struct Cache_Block_Header));
-	x = Cache_List_Is_Empty(c);
 	Cache_List_Append(c, pbh);
+	x = Cache_List_Is_Empty(c);
+	printf("%d\n", pbh);
+	printf	(x ? "liste vide\n" : "liste pas vide\n");
+	printf("Ajout élément\n");
 	Cache_List_Append(c, pbh2);
-	//Cache_List_Append(c, pbh3);
-	printf("LOL\n\n");
+	x = Cache_List_Is_Empty(c);
+		printf("%d\n", pbh2);
+	printf	(x ? "liste vide\n" : "liste pas vide\n");
 	
-	int compteur =0;
-	while(!c->next){
-		printf("%deme element\n", compteur++);
-		c=c->next;
+	for (struct Cache_List *list = c; list != NULL; list = list->next) {
+			printf("%d\n", list->pheader);
 	}
-		
-	printf	("%d\n", x);
+	
+	Cache_List_Delete(c);
+	
+	if (!c)
+		printf("Liste détruite mouahahahah\n");
+
 }
