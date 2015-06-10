@@ -17,16 +17,17 @@ struct Cache_List *Cache_List_Create() {
 
 /** Détruit la liste pointée par list */
 void Cache_List_Delete(struct Cache_List *list) {
-	 struct Cache_List* cur;
+	struct Cache_List *tmp;
+	struct Cache_List *cur = list;
 	
-	for (cur = list; cur->next != NULL; cur = cur->next) {/*on va à la fin de la liste */}
-	
-	while(cur){
-		cur = cur->prev;
-		//On part de la fin de la liste pour supprimer tous les éléments 
-		free(cur->next);
+	while (cur->next != NULL){
+		cur = tmp;
+		cur = tmp->next;
+		free(tmp);
 	}
-	free(cur); 
+	
+	if (cur->next == NULL && cur != NULL)
+		free(cur);
 }
 
 /*! Insertion d'un élément à la fin */
@@ -45,19 +46,13 @@ void Cache_List_Append(struct Cache_List *list, struct Cache_Block_Header *pbh) 
 
 /*! Insertion d'un élément au début*/
 void Cache_List_Prepend(struct Cache_List *list, struct Cache_Block_Header *pbh) {
-	struct Cache_List *cur = list;
 	struct Cache_List *new = (struct Cache_List*) malloc(sizeof(struct Cache_List)); //création nouvel élément
 	
 	//on refait les chaînages
 	new->pheader = pbh;
 	new->next = list;
 	new->prev = NULL;
-	
-	while (cur) {
-		/*on se place tout au début de la liste*/
-		cur = cur->prev;
-	}
-	cur->prev = new;
+	list = new;
 }
 
 /*! Retrait du premier élément */
@@ -151,12 +146,12 @@ int main() {
 	printf("Ajout élément\n");
 	struct Cache_Block_Header *pbh = (struct Cache_Block_Header*) malloc(sizeof(struct Cache_Block_Header));
 	struct Cache_Block_Header *pbh2 = (struct Cache_Block_Header*) malloc(sizeof(struct Cache_Block_Header));
-	Cache_List_Append(c, pbh);
+	Cache_List_Prepend(c, pbh);
 	x = Cache_List_Is_Empty(c);
 	printf("%d\n", pbh);
 	printf	(x ? "liste vide\n" : "liste pas vide\n");
 	printf("Ajout élément\n");
-	Cache_List_Append(c, pbh2);
+	Cache_List_Prepend(c, pbh2);
 	x = Cache_List_Is_Empty(c);
 		printf("%d\n", pbh2);
 	printf	(x ? "liste vide\n" : "liste pas vide\n");
@@ -165,9 +160,5 @@ int main() {
 			printf("%d\n", list->pheader);
 	}
 	
-	Cache_List_Delete(c);
 	
-	if (!c)
-		printf("Liste détruite mouahahahah\n");
-
 }

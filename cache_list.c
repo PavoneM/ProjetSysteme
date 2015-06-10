@@ -23,18 +23,19 @@ struct Cache_List *Cache_List_Create() {
 
 /** Détruit la liste pointée par list */
 void Cache_List_Delete(struct Cache_List *list) {
-	 struct Cache_List* cur;
+	struct Cache_List *tmp;
+	struct Cache_List *cur = list;
 	
-	for (cur = list; cur->next != NULL; cur = cur->next) {/*on va à la fin de la liste */}
-	
-	while(cur){
-		cur = cur->prev;
-		//On part de la fin de la liste pour supprimer tous les éléments 
-		free(cur->next);
+	while (cur->next != NULL){
+		cur = tmp;
+		cur = tmp->next;
+		free(tmp);
 	}
 	
-	free(cur); 
+	if (cur->next == NULL && cur != NULL)
+		free(cur);
 }
+
 
 /*! Insertion d'un élément à la fin */
 void Cache_List_Append(struct Cache_List *list, struct Cache_Block_Header *pbh) {
@@ -55,17 +56,13 @@ void Cache_List_Prepend(struct Cache_List *list, struct Cache_Block_Header *pbh)
 	struct Cache_List *cur = list;
 	struct Cache_List *new = (struct Cache_List*) malloc(sizeof(struct Cache_List)); //création nouvel élément
 	
-	if (Cache_List_Is_Empty(list)) {
-		list->pheader = pbh;
-	}
-	
 	//on refait les chaînages
 	new->pheader = pbh;
 	new->next = list;
 	new->prev = NULL;
 	
-	while (cur) {
-	/*on se place tout au début de la liste*/
+	while (cur->prev != NULL) {
+		/*on se place tout au début de la liste*/
 		cur = cur->prev;
 	}
 	cur->prev = new;
