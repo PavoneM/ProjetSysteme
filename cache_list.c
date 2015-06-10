@@ -75,7 +75,7 @@ void Cache_List_Prepend(struct Cache_List *list, struct Cache_Block_Header *pbh)
 	
 	while (cur->prev) {
 	/*on se place tout au début de la liste*/
-		cur = cur->prev
+		cur = cur->prev;
 	}
 	cur->prev = new;
 }
