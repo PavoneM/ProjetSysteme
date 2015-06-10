@@ -15,21 +15,22 @@
 
 typedef struct
 {
-    int unsigned nderef;
-    int unsigned compteur;
+    unsigned int nderef;
+    unsigned int compteur;
 } NUR;
 
 /*!
- * RAND : pas grand chose à faire ici. 
- *
- * En fait, nous initialisons le germe
- * (seed) du générateur aléatoire à quelque chose d'éminemment variable, pour
- * éviter d'avoir la même séquence à chque exécution...
- */
+  * //! Creation et initialisation de la stratégie (invoqué par la création de cache).
+ * //@author Ulysse Riccio
+*/
 void *Strategy_Create(struct Cache *pcache)
 {
-    // srand((unsigned int)time(NULL));
-    return NULL;
+    NUR * newNur = malloc( sizeof (NUR) * 1 );
+
+    newNur->nderef = pcache->nderef; //!< période de déréférençage pour NUR
+    newNur->compteur = pcache->nderef; //!< période de déréférençage pour NUR
+
+    return newNur;
 }
 
 /*!
