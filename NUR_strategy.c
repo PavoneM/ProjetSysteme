@@ -34,10 +34,13 @@ void *Strategy_Create(struct Cache *pcache)
 }
 
 /*!
- * RAND : Rien à faire ici.
+ * //! Fermeture de la stratégie.
+ * //@author Ulysse Riccio
  */
 void Strategy_Close(struct Cache *pcache)
 {
+    //libere l'allocation de la structure qui se trouve dans pstrategy
+    free(pcache->pstrategy);
 }
 
 /*!
