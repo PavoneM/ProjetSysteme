@@ -1,75 +1,56 @@
 #include "low_cache.h"
-#include <stdio.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <libgen.h>
+#include "strategy.h"
 
+// Compteur d'accès (lecture/écriture)
+int nacces;
 
-//! Création du cache.
-struct Cache *Cache_Create(const char *fic, unsigned nblocks, unsigned nrecords,
-                           size_t recordsz, unsigned nderef){
-
-	struct Cache *cache = (struct Cache*) malloc(sizeof(struct Cache));
-	int i;
-
-	cache->file=basename(fic);
-	cache->fp=fopen(fic, "r+");
-	cache->nblocks=nblocks;
-	cache->nrecords=nrecords;
-	cache->recordsz=recordsz;
-	cache->nderef=nderef;
-
-	// pstrategy???
-
-	struct Cache_Instrument instru;
-
-	instru.n_reads=0;
-	instru.n_writes=0;
-	instru.n_hits=0;
-	instru.n_syncs=0;
-	instru.n_deref=0;
-
-	cache->instrument=instru;
-
-	struct Cache_Block_Header *headers = (struct Cache_Block_Header*) malloc(sizeof(struct Cache_Block_Header)*nblocks);
-	for(i=0 ; i< nblocks ; i++){
-		(headers+i)->flags=VALID;
-		(headers+i)->ibfile=0;
-		(headers+i)->ibcache=0;
+struct Cache *Cache_Create(const char *fic, unsigned nblocks, unsigned nrecords,size_t recordsz, unsigned nderef){
+	int i;	
+	struct Cache *cache = malloc(sizeof(struct Cache));
+	cache->fp = fopen(fic, "r+");
+	cache->file = basename(fic);
+	cache->nblocks = nblocks;
+	cache->nrecords = nrecords;
+	cache->recordsz = recordsz;
+	cache->blocksz = nrecords * recordsz;
+	cache->nderef = nderef;
+	cache->pstrategy = Strategy_Create(cache);
+	Cache_Get_Instrument(cache);
+	cache->headers = malloc(sizeof(struct Cache_Block_Header)*nblocks);
+	
+	for(i = 0 ; i < nblocks ; i++){
+		cache->headers[i].data = malloc(recordsz * nrecords);
+		cache->headers[i].ibcache = i;
+		cache->headers[i].flags &= 0x0;
 	}
+	cache->pfree = &(cache->headers[0]);
+	nacces = 0;
 
-	cache->headers=headers;
-
-	cache->pfree=Get_Free_Block(cache);
-
-	return CACHE_OK;
+	return cache;	
 }
 
 //! Fermeture (destruction) du cache.
 Cache_Error Cache_Close(struct Cache *pcache){
 	free(pcache->headers);
-	free(pcache->pfree);
 	free(pcache);
+
 	return CACHE_OK;
 }
 
 //! Synchronisation du cache.
 Cache_Error Cache_Sync(struct Cache *pcache){
+	int i;
+	nacces = 0;
+	pcache->instrument.n_syncs++;
 
-	int fd = fileno(pcache->fp), i;
+	for(i = 0 ; i < pcache->nblocks ; i++){
+		if((pcache->headers[i].flags & MODIF) > 0){
+			if(fseek(pcache->fp, pcache->headers[i].ibfile * pcache->blocksz, SEEK_SET) != 0)
+				return CACHE_KO;
 
-	for(i=0 ; i< pcache->nblocks ; i++){
-
-		struct Cache_Block_Header *header = pcache->headers+i;
-		if( header->flags & MODIF){
-
-			char* data = header->data;
-
-			lseek(fd, pcache->recordsz*header->ibfile, SEEK_SET);
-
-			write(fd, data, pcache->recordsz);
-
+			if(fputs(pcache->headers[i].data, pcache->fp) == EOF)
+				return CACHE_KO;
+			pcache->headers[i].flags &= ~MODIF;
 		}
 	}
 
@@ -78,22 +59,43 @@ Cache_Error Cache_Sync(struct Cache *pcache){
 
 //! Invalidation du cache.
 Cache_Error Cache_Invalidate(struct Cache *pcache){
-	
 	int i;
-
-	for(i=0 ; i< pcache->nblocks ; i++)
-		if((pcache->headers+i)->flags & VALID)
-			(pcache->headers+i)->flags-=VALID;
+	for(i = 0 ; i < pcache->nblocks ; i++)
+		pcache->headers[i].flags &= ~VALID;
+	pcache->pfree = &(pcache->headers[0]);
+	Strategy_Invalidate(pcache);	
 
 	return CACHE_OK;
 }
 
 //! Lecture  (à travers le cache).
 Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord){
+
+
 	return CACHE_OK;
 }
 
 //! Écriture (à travers le cache).
 Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord){
+
+
 	return CACHE_OK;
 }
+
+//! Résultat de l'instrumentation.
+struct Cache_Instrument *Cache_Get_Instrument(struct Cache *pcache){
+	struct Cache_Instrument *instr = malloc(sizeof(struct Cache_Instrument));
+	*instr = pcache->instrument;
+
+	pcache->instrument.n_reads = 0;
+	pcache->instrument.n_writes = 0;
+	pcache->instrument.n_hits = 0;
+	pcache->instrument.n_syncs = 0;
+	pcache->instrument.n_deref = 0;
+
+	return instr;
+}
+
+
+
+
