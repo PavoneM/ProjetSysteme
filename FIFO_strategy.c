@@ -25,20 +25,21 @@ void *Strategy_Create(struct Cache *pcache) {
 
 /*!
  * Fermeture de la stratégie
+ * (struct Cache_List *) on type le pointeur pstrategy (pointeur sur void)
  */
 void Strategy_Close(struct Cache *pcache) {
     Cache_List_Delete((struct Cache_List *)((pcache)->pstrategy));
 }
 
 /*!
- *
+ * On applique la methode Cache_List_Clear qui reinitialise tous les pointeurs de la stratégie à NULL
  */
 void Strategy_Invalidate(struct Cache *pcache) {
     Cache_List_Clear((struct Cache_List *)((pcache)->pstrategy));
 }
 
 /*!
- *
+ * Stratégie de remplacement de bloc
  */
 struct Cache_Block_Header *Strategy_Replace_Block(struct Cache *pcache)
 {
