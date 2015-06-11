@@ -4,7 +4,7 @@
 #define debug(text) //printf("\e[1;34m-->%s\e[0m\n",text)
 
 // Compteur d'accès (lecture/écriture)
-int nacces;
+int nbAccess;
 
 struct Cache_Block_Header *Cache_Is_Present(struct Cache *cache, int index){
 	int i;
@@ -42,7 +42,7 @@ struct Cache *Cache_Create(const char *fic, unsigned nblocks, unsigned nrecords,
 		cache->headers[i].flags = 0x0;
 	}
 	cache->pfree = &(cache->headers[0]);
-	nacces = 0;
+	nbAccess = 0;
 
 	return cache;	
 }
@@ -64,7 +64,7 @@ Cache_Error Cache_Sync(struct Cache *pcache){
 	debugFonc("Cache sync");
 
 	int i;
-	nacces = 0;
+	nbAccess = 0;
 	pcache->instrument.n_syncs++;
 
 	for(i = 0 ; i < pcache->nblocks ; i++){
@@ -103,6 +103,11 @@ Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord){
 	struct Cache_Block_Header *block;
 	int index = irfile / pcache->nrecords;
 
+	pcache->instrument.n_reads++;	
+	
+	if(nbAccess++ == NSYNC)
+		Cache_Sync(pcache);
+
 	if(block = Cache_Is_Present(pcache, index)){
 		pcache->instrument.n_hits++;
 		//printf("LOL\n");
@@ -127,7 +132,6 @@ Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord){
 		fgets(block->data, pcache->blocksz, pcache->fp);
 
 		block->flags = VALID;
-		pcache->instrument.n_reads++;	
 
 		block->ibfile = index;
 	}
@@ -142,6 +146,11 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord){
 	char *buff = (char*)precord;
 	struct Cache_Block_Header *block;
 	int index = irfile / pcache->nrecords;
+
+	pcache->instrument.n_writes++;
+
+	if(nbAccess++ >= NSYNC)
+		Cache_Sync(pcache);
 
 	if(block = Cache_Is_Present(pcache, index)){
 		debug("Present dans cache");
@@ -180,12 +189,6 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord){
 
 	block->flags |= MODIF;
 
-	//printf("Incremente\n");
-	pcache->instrument.n_writes++;
-	
-	if(++nacces == NSYNC)
-		Cache_Sync(pcache);
-
 	Strategy_Write(pcache, block);
 
 
@@ -201,13 +204,12 @@ struct Cache_Instrument *Cache_Get_Instrument(struct Cache *pcache){
 	instr->n_hits = pcache->instrument.n_hits;
 	instr->n_syncs = pcache->instrument.n_syncs;
 	instr->n_deref = pcache->instrument.n_deref;
-		
+
 	pcache->instrument.n_reads = 0;
 	pcache->instrument.n_writes = 0;
 	pcache->instrument.n_hits = 0;
 	pcache->instrument.n_syncs = 0;
 	pcache->instrument.n_deref = 0;
-	
 
 	return instr;
 }
