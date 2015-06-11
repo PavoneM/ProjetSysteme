@@ -20,7 +20,6 @@ struct Cache_List *Cache_List_Create() {
 	cache_list->prev = cache_list;
 	cache_list->next = cache_list;
 	return cache_list;
-
 }
 
 /** Détruit la liste pointée par list */
@@ -33,7 +32,8 @@ void Cache_List_Delete(struct Cache_List *list) {
 		(cur->next)->prev = cur->prev;
 		free(cur);
 		cur = cur->next;
-	} free(list);
+	}
+	free(list);
 	
 }
 
@@ -43,13 +43,13 @@ void Cache_List_Append(struct Cache_List *list, struct Cache_Block_Header *pbh) 
 	struct Cache_List *cur;
 	struct Cache_List *new = (struct Cache_List*) malloc(sizeof(struct Cache_List));
 	
-	for (cur = list->next; cur != list; cur = cur->next) {/*on va à la fin de la liste */}
+	for (cur = list->next; cur->next != list; cur = cur->next) {/*on va à la fin de la liste */}
 	
+	//on refait les chaînages
 	new->pheader = pbh;
-	new->prev = cur->prev;
-    (cur->prev)->next = new;
-    cur->prev = new;
-    new->next = cur;
+	new->prev = cur;
+    new->next = list;
+    cur->next = new;
 	
 }
 
@@ -57,15 +57,12 @@ void Cache_List_Append(struct Cache_List *list, struct Cache_Block_Header *pbh) 
 void Cache_List_Prepend(struct Cache_List *list, struct Cache_Block_Header *pbh) { 
 	
 	struct Cache_List *new = (struct Cache_List*) malloc(sizeof(struct Cache_List));
-	struct Cache_List *cur = list->next;
 	
 	//on refait les chaînages
 	new->pheader=pbh;
-	new->prev = cur->prev;
-	(cur->prev)->next = new;
-	cur->prev = new;
-	new->next = cur;
-	
+	new->prev = new;
+	new->next = list;
+	list->prev = new;
 }
 
 /*! Retrait du premier élément */
@@ -83,14 +80,14 @@ struct Cache_Block_Header *Cache_List_Remove_First(struct Cache_List *list) {
 /*! Retrait du dernier élément */
 struct Cache_Block_Header *Cache_List_Remove_Last(struct Cache_List *list) {
 	
-	struct Cache_List *cur;
+	struct Cache_List *cur = list;
 	struct Cache_Block_Header *header;
-           
-    for (cur = list->next; cur != list; cur=cur->next){/*on va à la fin de la liste */}
-    header = cur->pheader;
-	(cur->next)->prev = cur->prev;        
-    (cur->prev)->next = cur->next;
-    return header;
+	for (cur = cur->next; cur->next != list; cur = cur->next) {/* on ne fait rien*/}
+	
+	(cur->prev)->next = list;
+	header = list->pheader;
+	free(cur);
+	return header;
 
 }
 
@@ -104,6 +101,8 @@ struct Cache_Block_Header *Cache_List_Remove(struct Cache_List *list,
 		return NULL;
 	
 	for (cur = list->next; cur->pheader != pbh; cur = cur->next) {/*on ne fait rien*/}
+	
+	//on refait les chaînages
 	header = cur->pheader;
 	(cur->next)->prev = cur->prev;
 	(cur->prev)->next = cur->next;
@@ -121,15 +120,12 @@ void Cache_List_Clear(struct Cache_List *list) {
         (cur->next)->prev = cur->prev;
         free(cur);
     }
-    
 }
 
 /*! Test de liste vide */
 bool Cache_List_Is_Empty(struct Cache_List *list) {
 	
-	if (list->next != list->prev)
-		return false;
-	return true;
+	return ((list == list->next) && (list == list->prev) && (!list->pheader));
 	
 }
 
