@@ -127,6 +127,8 @@ Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord){
 		fgets(block->data, pcache->blocksz, pcache->fp);
 
 		block->flags = VALID;
+		pcache->instrument.n_reads++;	
+
 		block->ibfile = index;
 	}
 
@@ -162,8 +164,6 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord){
 		}
 
 		debug("Je place le pointeur à l'index");
-		//printf("IrFile: %d     Index: %d\n",irfile, index);
-		//printf("LOOOL %d",pcache->fp);
 		if(fseek(pcache->fp, DADDR(pcache, index), SEEK_SET)){
 				debug("Je bug");
 				return CACHE_KO;
@@ -180,6 +180,7 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord){
 
 	block->flags |= MODIF;
 
+	//printf("Incremente\n");
 	pcache->instrument.n_writes++;
 	
 	if(++nacces == NSYNC)
@@ -194,12 +195,19 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord){
 //! Résultat de l'instrumentation.
 struct Cache_Instrument *Cache_Get_Instrument(struct Cache *pcache){
 	struct Cache_Instrument *instr = malloc(sizeof(struct Cache_Instrument));
+	
+	instr->n_reads = pcache->instrument.n_reads;
+	instr->n_writes = pcache->instrument.n_writes;
+	instr->n_hits = pcache->instrument.n_hits;
+	instr->n_syncs = pcache->instrument.n_syncs;
+	instr->n_deref = pcache->instrument.n_deref;
+		
 	pcache->instrument.n_reads = 0;
 	pcache->instrument.n_writes = 0;
 	pcache->instrument.n_hits = 0;
 	pcache->instrument.n_syncs = 0;
 	pcache->instrument.n_deref = 0;
-	*instr = pcache->instrument;
+	
 
 	return instr;
 }
