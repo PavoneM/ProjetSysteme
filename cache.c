@@ -1,7 +1,7 @@
 #include "low_cache.h"
 #include "strategy.h"
-#define debugFonc(text) printf("\e[1;31m%s\e[0m\n",text)
-#define debug(text) printf("\e[1;34m-->%s\e[0m\n",text)
+#define debugFonc(text) //printf("\e[1;31m%s\e[0m\n",text)
+#define debug(text) //printf("\e[1;34m-->%s\e[0m\n",text)
 
 // Compteur d'accès (lecture/écriture)
 int nacces;
@@ -24,7 +24,7 @@ struct Cache *Cache_Create(const char *fic, unsigned nblocks, unsigned nrecords,
 
 	int i;	
 	struct Cache *cache = malloc(sizeof(struct Cache));
-	cache->fp = fopen(fic, "r+");
+	cache->fp = fopen(fic, "rw+");
 	cache->file = basename(fic);
 	cache->nblocks = nblocks;
 	cache->nrecords = nrecords;
@@ -105,6 +105,7 @@ Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord){
 
 	if(block = Cache_Is_Present(pcache, index)){
 		pcache->instrument.n_hits++;
+		//printf("LOL\n");
 		debug("Present dans cache");
 	}
 	else{
@@ -136,7 +137,6 @@ Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord){
 Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord){
 
 	debugFonc("Cache Write");
-
 	char *buff = (char*)precord;
 	struct Cache_Block_Header *block;
 	int index = irfile / pcache->nrecords;
@@ -162,6 +162,8 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord){
 		}
 
 		debug("Je place le pointeur à l'index");
+		//printf("IrFile: %d     Index: %d\n",irfile, index);
+		//printf("LOOOL %d",pcache->fp);
 		if(fseek(pcache->fp, DADDR(pcache, index), SEEK_SET)){
 				debug("Je bug");
 				return CACHE_KO;
