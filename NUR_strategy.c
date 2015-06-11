@@ -2,142 +2,177 @@
  * \file NUR_strategy.c
  *
  * \brief  Stratégie de remplacement NUR.
- * 
- * \author Ulysse RICCIO
  *
- * $Id: RAND_strategy.c,v 1.3 2008/03/04 16:52:49 jpr Exp $
+ * \author Ulysse Riccio / Thomas Moras
+ *
+ * $Id: NUR_strategy.c
  */
-
-#include <assert.h>
 
 #include "strategy.h"
 #include "low_cache.h"
 
+/* Valeur de vérité d'un entier */
+#define BOOLVAL(v) ((v) ? 1 : 0)
+
+/* Prend 2 bits m et r et en fait un entier m*2 + r */
+#define MAKE_RM(r, m) ((BOOLVAL(r)<<1) | BOOLVAL(m))
+
+
 typedef struct
 {
-    unsigned int nderef;
-    unsigned int compteur;
-} NUR;
+    int unsigned nderef;	/* Période de déréférençage */
+    int unsigned compteur;	/* compteur */
+}NUR;
 
 /*!
-  * //! Creation et initialisation de la stratégie (invoqué par la création de cache).
- * //@author Ulysse Riccio
-*/
+ * Creation et initialisation de la stratégie (invoqué par la création de cache).
+ * @author Ulysse Riccio
+ */
 void *Strategy_Create(struct Cache *pcache)
 {
-    NUR * newNur = malloc( sizeof (NUR) * 1 );
+    NUR *pstrat = malloc(sizeof(NUR));
 
-    newNur->nderef = pcache->nderef; //!< période de déréférençage pour NUR
-    newNur->compteur = pcache->nderef; //!< période de déréférençage pour NUR
+    pstrat->nderef = pcache->nderef;
+    pstrat->compteur = pcache->nderef;
 
-    return newNur;
+    return pstrat;
 }
 
-/*!
- * //! Fermeture de la stratégie.
- * //@author Ulysse Riccio
+/* FeRMeture de la stratégie
+ * @author Ulysse Riccio
  */
+
 void Strategy_Close(struct Cache *pcache)
 {
     //libere l'allocation de la structure qui se trouve dans pstrategy
     free(pcache->pstrategy);
 }
 
-/*!
-  * //! Fonction "réflexe" lors de l'invalidation du cache.
+/* Fonction "réflexe" lors de l'invalidation du cache.
  * @author Ulysse Riccio
  */
+
 void Strategy_Invalidate(struct Cache *pcache)
 {
-    NUR * nur = (NUR *) ( (pcache)->pstrategy );
-    unsigned short int ir_cache;
+    NUR *pstrat =  (NUR *)(pcache)->pstrategy;
+    int ib;
 
-    if (nur->nderef != 0)
+    if (pstrat->nderef != 0)
     {
-        nur->compteur = 1;
+        pstrat->compteur = 1;
 
-        // si deref = 0 on sort
-        if ( nur->nderef == 0 or ( nur->compteur ) - 1 > 0)
-            return;
+        // si nderef = 0 on sort
+        if (!(pstrat->nderef == 0 || --pstrat->compteur > 0)) {
+            for (ib = 0; ib < pcache->nblocks; ib++)
+                pcache->headers[ib].flags &= ~0x4;
 
-        //on remet le bit R a 0
-        for (ir_cache = 0; ir_cache < pcache->nblocks; ir_cache++)
-            pcache->headers[ir_cache].flags = pcache->headers[ir_cache].flags && not(0x4);
-
-        // on reinitialise le compteur
-        nur->compteur = nur->nderef;
-        ++ (pcache->instrument.n_deref); //!< Instrumentation du cache
+            // On reinitialise le compteur
+            pstrat->compteur = pstrat->nderef;
+            ++pcache->instrument.n_deref;
+        }
     }
 }
 
-/*! 
- * RAND : On prend le premier bloc invalide. S'il n'y en a plus, on prend un bloc au hasard.
+/*  Stratégie de remplacement de bloc
+ *  @author Ulysse Riccio
  */
 struct Cache_Block_Header *Strategy_Replace_Block(struct Cache *pcache)
 {
     int ib;
-    struct Cache_Block_Header *pbh;
+    int minimun;
+    struct Cache_Block_Header *pbh_save = NULL;
+    struct  Cache_Block_Header *pbh;
+    int RM;
 
-    /* On cherche d'abord un bloc invalide */
+
     if ((pbh = Get_Free_Block(pcache)) != NULL) return pbh;
 
-    /* Sinon on tire un numéro de bloc au hasard */
-    ib = RANDOM(0, pcache->nblocks);
-    return &pcache->headers[ib];
+    char inter1,inter2;
+
+    //la valeur de rm la plus petite
+    if ( 1 == 0 )
+        inter1 = 0;
+    if ( 1 == 1 )
+        inter1 = 1;
+    if ( 1 == 0 )
+        inter2 = 0;
+    if ( 1 == 1 )
+        inter2 = 1;
+
+    minimun = (( inter1 << 1 ) | ( inter2 )) + 1;
+
+
+    for ( ib = 0; ib < pcache->nblocks; ib++)
+    {
+        //minimun = MAKE_RM(1, 1) + 1,
+        pbh = &pcache->headers[ib];
+
+
+        if ( (pbh->flags & 0x4) == 0 )
+            inter1 = 0;
+        if ( (pbh->flags & 0x4) == 1 )
+            inter1 = 1;
+        if ( (pbh->flags & 0x2) == 0 )
+            inter2 = 0;
+        if ( (pbh->flags & 0x2) == 1 )
+            inter2 = 1;
+
+        RM = ( inter1 << 1 ) | ( inter2 );
+
+        // RM = MAKE_RM(pbh->flags & 0x4, pbh->flags & MODIF);
+
+        if ( RM == 0 ) return pbh;
+        else if (RM < minimun)
+        {
+            minimun = RM;
+            pbh_save = pbh;
+        }
+    }
+    return pbh_save;
 }
 
-
-/*!
-  * //! Fonction "réflexe" lors de la lecture.
- * @author Ulysse Riccio
+/*! Fonction "réflexe" lors de la lecture.
+ *  @author Ulysse Riccio
  */
 void Strategy_Read(struct Cache *pcache, struct Cache_Block_Header *pbh)
 {
-    NUR * nur = (NUR *) ( (pcache)->pstrategy );
-    unsigned short int ir_cache;
+    NUR *pstrat =  (NUR *)(pcache)->pstrategy;
+    int ib;
 
-    // si deref = 0 on sort
-    if ( nur->nderef == 0 or ( nur->compteur ) - 1 > 0)
-        return;
+    // si nderef = 0 on sort
+    if (!(pstrat->nderef == 0 || --pstrat->compteur > 0)) {
+        for (ib = 0; ib < pcache->nblocks; ib++) pcache->headers[ib].flags &= ~0x4;
 
-    //on remet le bit R a 0
-    for (ir_cache = 0; ir_cache < pcache->nblocks; ir_cache++)
-        pcache->headers[ir_cache].flags = pcache->headers[ir_cache].flags && not(0x4);
-
-    // on reinitialise le compteur
-    nur->compteur = nur->nderef;
-    ++ (pcache->instrument.n_deref); //!< Instrumentation du cache
-
-    pbh->flags = pbh->flags or REFER;
+        // On reinitialise le compteur
+        pstrat->compteur = pstrat->nderef;
+        ++pcache->instrument.n_deref;
+    }
+    pbh->flags = pbh->flags | 0x4;
 }
 
-/*!
-  * //! Fonction "réflexe" lors de l'écriture.
- * @author Ulysse Riccio
- * meme chose que pour read
+/*! Fonction "réflexe" lors de l'écriture.
+ *  @author Ulysse Riccio
+ *  meme chose que pour read
  */
 void Strategy_Write(struct Cache *pcache, struct Cache_Block_Header *pbh)
 {
-    NUR * nur = (NUR *) ( (pcache)->pstrategy );
-    unsigned short int ir_cache;
+    NUR *pstrat =  (NUR *)(pcache)->pstrategy;
+    int ib;
 
-    // si deref = 0 on sort
-    if ( nur->nderef == 0 or ( nur->compteur ) - 1 > 0)
-        return;
+    // si nderef = 0 on sort
+    if (!(pstrat->nderef == 0 || --pstrat->compteur > 0)) {
+        for (ib = 0; ib < pcache->nblocks; ib++) pcache->headers[ib].flags &= ~0x4;
 
-    //on remet le bit R a 0
-    for (ir_cache = 0; ir_cache < pcache->nblocks; ir_cache++)
-        pcache->headers[ir_cache].flags = pcache->headers[ir_cache].flags && not(0x4);
-
-    // on reinitialise le compteur
-    nur->compteur = nur->nderef;
-    ++ (pcache->instrument.n_deref); //!< Instrumentation du cache
-
-    pbh->flags = pbh->flags or REFER;
+        // On reinitialise le compteur
+        pstrat->compteur = pstrat->nderef;
+        ++pcache->instrument.n_deref;
+    }
+    pbh->flags = pbh->flags | 0x4;
 }
 
-//@author Ulysse Riccio
-//Retourne nom de la stratégie utilisée ici nur
+/*! Retourne le nom de la stratégie ici nur
+ *  @author Ulysse Riccio
+ */
 char *Strategy_Name()
 {
     return "NUR";
