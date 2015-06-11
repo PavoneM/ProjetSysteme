@@ -43,13 +43,19 @@ void Cache_List_Append(struct Cache_List *list, struct Cache_Block_Header *pbh) 
 	struct Cache_List *cur;
 	struct Cache_List *new = (struct Cache_List*) malloc(sizeof(struct Cache_List));
 	
-	for (cur = list->next; cur->next != list; cur = cur->next) {/*on va à la fin de la liste */}
+	if (Cache_List_Is_Empty(list)) {
+		list->pheader = pbh;
+	}
 	
-	//on refait les chaînages
-	new->pheader = pbh;
-	new->prev = cur;
-    new->next = list;
-    cur->next = new;
+	else {
+		for (cur = list->next; cur->next != list; cur = cur->next) {/*on va à la fin de la liste */}
+		
+		//on refait les chaînages
+		new->pheader = pbh;
+		new->prev = cur;
+		new->next = list;
+		cur->next = new;
+	}
 	
 }
 

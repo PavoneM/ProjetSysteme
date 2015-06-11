@@ -37,13 +37,19 @@ void Cache_List_Append(struct Cache_List *list, struct Cache_Block_Header *pbh) 
 	struct Cache_List *cur;
 	struct Cache_List *new = (struct Cache_List*) malloc(sizeof(struct Cache_List));
 	
-	for (cur = list->next; cur->next != list; cur = cur->next) {/*on va à la fin de la liste */}
+	if (Cache_List_Is_Empty(list)) {
+		list->pheader = pbh;
+	}
 	
-	//on refait les chaînages
-	new->pheader = pbh;
-	new->prev = cur;
-    new->next = list;
-    cur->next = new;
+	else {
+		for (cur = list->next; cur->next != list; cur = cur->next) {/*on va à la fin de la liste */}
+		
+		//on refait les chaînages
+		new->pheader = pbh;
+		new->prev = cur;
+		new->next = list;
+		cur->next = new;
+	}
 	
 }
 
@@ -155,23 +161,13 @@ printf("Création cache_list\n");
 	struct Cache_Block_Header *pbh2 = (struct Cache_Block_Header*) malloc(sizeof(struct Cache_Block_Header));
 	struct Cache_Block_Header *pbh3 = (struct Cache_Block_Header*) malloc(sizeof(struct Cache_Block_Header));
 	Cache_List_Append(c,pbh);
-	Cache_List_Append(c,pbh1);
-	Cache_List_Append(c,pbh2);
-	Cache_List_Append(c,pbh3);
-	printf("pointeur : %p\n",pbh);
-	printf("pointeur1 : %p\n",pbh1);
-	printf("pointeur2 : %p\n",pbh2);
-	printf("pointeur3 : %p\n",pbh3);
 	x = Cache_List_Is_Empty(c);
 	printf(x ? "liste vide\n" : "liste non vide\n");
-	
-	Cache_List_Remove_First(c);
-	
-	int cpt = 0;
-	while (c->next != c && cpt != 5) {
+
+	while (c->next) {
 		printf("%p\n",c->pheader);
-		cpt++;
 		c = c->next;
+		return;
 	}
 	
 }
