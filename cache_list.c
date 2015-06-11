@@ -1,8 +1,7 @@
 /*!
- * \file low_cache.c
+ * \file cache_list.c
  * 
  * \author Cindy Najjar
- * \author Manuel Pavone
  */
 
 #include <stdio.h>
