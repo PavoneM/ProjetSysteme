@@ -175,21 +175,16 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord){
 		block->flags = VALID;
 		block->ibfile = index;
 	}
-
-	// Ecriture de l'enregistrement depuis le buffer dans le cache
 	if(snprintf(ADDR(pcache, irfile, block), pcache->recordsz, "%s", buff) < 0)
 		return CACHE_KO;
 
 	block->flags |= MODIF;
 
-	// Incrémentation du nombre d'écritures
 	pcache->instrument.n_writes++;
 	
-	// Gestion de la synchronisation
 	if(++nacces == NSYNC)
 		Cache_Sync(pcache);
 
-	// Fonction "réflexe" lors de l'écriture.
 	Strategy_Write(pcache, block);
 
 
