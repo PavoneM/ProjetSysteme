@@ -11,12 +11,16 @@ struct Cache_Block_Header *Cache_Is_Present(struct Cache *cache, int index){
 
 	for(i = 0 ; i < cache->nblocks ; i++)
 		if(cache->headers[i].ibfile == index){
-			if(!(cache->headers[i].flags & VALID)) return NULL;
+			// Si V == 0 ou que l'index n'est pas le bon : return NULL
+			if(!(cache->headers[i].flags & VALID) || cache->headers[i].ibfile != index	) 
+				return NULL;
+			// Sinon, on retourne le header correspondant
 			return &(cache->headers[i]);
 		}
 
 	return NULL;
 }
+
 
 struct Cache *Cache_Create(const char *fic, unsigned nblocks, unsigned nrecords,size_t recordsz, unsigned nderef){
 	
@@ -24,7 +28,7 @@ struct Cache *Cache_Create(const char *fic, unsigned nblocks, unsigned nrecords,
 
 	int i;	
 	struct Cache *cache = malloc(sizeof(struct Cache));
-	cache->fp = fopen(fic, "rw+");
+	cache->fp = fopen(fic, "wb+");
 	cache->file = basename(fic);
 	cache->nblocks = nblocks;
 	cache->nrecords = nrecords;
@@ -51,6 +55,7 @@ struct Cache *Cache_Create(const char *fic, unsigned nblocks, unsigned nrecords,
 Cache_Error Cache_Close(struct Cache *pcache){
 	
 	debugFonc("Cache Close");
+
 
 	free(pcache->headers);
 	free(pcache);
@@ -95,26 +100,14 @@ Cache_Error Cache_Invalidate(struct Cache *pcache){
 	return CACHE_OK;
 }
 
-//! Lecture  (à travers le cache).
-Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord){
-
-	debugFonc("Cache read");
-
+struct Cache_Block_Header* Cache_Block_Create(struct Cache *pcache, int index){
 	struct Cache_Block_Header *block;
-	int index = irfile / pcache->nrecords;
-
-	pcache->instrument.n_reads++;	
-	
-	if(nbAccess++ == NSYNC)
+	if(++nbAccess >= NSYNC)
 		Cache_Sync(pcache);
 
-	if(block = Cache_Is_Present(pcache, index)){
+	if(block = Cache_Is_Present(pcache, index))
 		pcache->instrument.n_hits++;
-		//printf("LOL\n");
-		debug("Present dans cache");
-	}
 	else{
-		debug("Pas présent dans cache");
 		block = Strategy_Replace_Block(pcache);
 		pcache->pfree = Get_Free_Block(pcache);
 
@@ -126,17 +119,16 @@ Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord){
 				return CACHE_KO;
 		}
 
-		if(fseek(pcache->fp, DADDR(pcache, index), SEEK_SET) != 0)
+		if(fseek(pcache->fp, DADDR(pcache, index), SEEK_SET)){
 				return CACHE_KO;
+			}
 
 		fgets(block->data, pcache->blocksz, pcache->fp);
 
 		block->flags = VALID;
-
 		block->ibfile = index;
 	}
-
-	return CACHE_OK;
+	return block;
 }
 
 //! Écriture (à travers le cache).
@@ -145,66 +137,43 @@ Cache_Error Cache_Write(struct Cache *pcache, int irfile, const void *precord){
 	debugFonc("Cache Write");
 	char *buff = (char*)precord;
 	struct Cache_Block_Header *block;
-	int index = irfile / pcache->nrecords;
 
-	pcache->instrument.n_writes++;
-
-	if(nbAccess++ >= NSYNC)
-		Cache_Sync(pcache);
-
-	if(block = Cache_Is_Present(pcache, index)){
-		debug("Present dans cache");
-		pcache->instrument.n_hits++;
-	}
-	else{
-		debug("Pas present dans cache");
-		debug("Replace Bloc Strategy");
-		block = Strategy_Replace_Block(pcache);
-		debug("Recupération du premier block libre");
-		pcache->pfree = Get_Free_Block(pcache);
-
-		if(block->flags & MODIF){
-			debug("Le block était un block modifié");
-			if(fseek(pcache->fp, DADDR(pcache, block->ibfile), SEEK_SET) != 0)
-				return CACHE_KO;
-
-			if(fputs(block->data, pcache->fp) == EOF)
-				return CACHE_KO;
-		}
-
-		debug("Je place le pointeur à l'index");
-		if(fseek(pcache->fp, DADDR(pcache, index), SEEK_SET)){
-				debug("Je bug");
-				return CACHE_KO;
-			}
-
-		debug("On lit les lignes à partir du fichier");
-		fgets(block->data, pcache->blocksz, pcache->fp);
-
-		block->flags = VALID;
-		block->ibfile = index;
-	}
-	if(snprintf(ADDR(pcache, irfile, block), pcache->recordsz, "%s", buff) < 0)
+	if((block=Cache_Block_Create(pcache, irfile / pcache->nrecords)) == NULL)
 		return CACHE_KO;
 
+	pcache->instrument.n_writes++;	
+	if(snprintf(ADDR(pcache, irfile, block), pcache->recordsz, "%s", buff) < 0)
+		return CACHE_KO;
 	block->flags |= MODIF;
-
 	Strategy_Write(pcache, block);
 
 
 	return CACHE_OK;
 }
 
+//! Lecture  (à travers le cache).
+Cache_Error Cache_Read(struct Cache *pcache, int irfile, void *precord){
+
+	debugFonc("Cache read");
+
+	struct Cache_Block_Header *block;
+	int index = irfile / pcache->nrecords;
+	if((block=Cache_Block_Create(pcache, irfile / pcache->nrecords)) == NULL)
+		return CACHE_KO;
+
+	pcache->instrument.n_reads++;	
+
+	Strategy_Read(pcache, block);
+
+	return CACHE_OK;
+}
+
+
 //! Résultat de l'instrumentation.
 struct Cache_Instrument *Cache_Get_Instrument(struct Cache *pcache){
 	struct Cache_Instrument *instr = malloc(sizeof(struct Cache_Instrument));
 	
-	instr->n_reads = pcache->instrument.n_reads;
-	instr->n_writes = pcache->instrument.n_writes;
-	instr->n_hits = pcache->instrument.n_hits;
-	instr->n_syncs = pcache->instrument.n_syncs;
-	instr->n_deref = pcache->instrument.n_deref;
-
+	*instr = pcache->instrument;
 	pcache->instrument.n_reads = 0;
 	pcache->instrument.n_writes = 0;
 	pcache->instrument.n_hits = 0;
