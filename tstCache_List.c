@@ -63,11 +63,13 @@ void Cache_List_Prepend(struct Cache_List *list, struct Cache_Block_Header *pbh)
 struct Cache_Block_Header *Cache_List_Remove_First(struct Cache_List *list) {
 	
 	struct Cache_List *cur = list->next;
+    struct Cache_Block_Header *header;
     
     (cur->next)->prev=cur->prev;
     (cur->prev)->next=cur->next;
-
-    return cur->pheader;
+	header = cur->pheader;
+	free(cur);
+    return header;
 
 }
 
@@ -163,7 +165,7 @@ printf("Création cache_list\n");
 	x = Cache_List_Is_Empty(c);
 	printf(x ? "liste vide\n" : "liste non vide\n");
 	
-	Cache_List_Remove(c,pbh1);
+	Cache_List_Remove_First(c);
 	
 	int cpt = 0;
 	while (c->next != c && cpt != 5) {

@@ -69,11 +69,13 @@ void Cache_List_Prepend(struct Cache_List *list, struct Cache_Block_Header *pbh)
 struct Cache_Block_Header *Cache_List_Remove_First(struct Cache_List *list) {
 	
 	struct Cache_List *cur = list->next;
+    struct Cache_Block_Header *header;
     
     (cur->next)->prev=cur->prev;
     (cur->prev)->next=cur->next;
-
-    return cur->pheader;
+	header = cur->pheader;
+	free(cur);
+    return header;
 
 }
 
