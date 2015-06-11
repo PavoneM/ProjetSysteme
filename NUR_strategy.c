@@ -11,169 +11,99 @@
 #include "strategy.h"
 #include "low_cache.h"
 
-/* Valeur de vérité d'un entier */
-#define BOOLVAL(v) ((v) ? 1 : 0)
+//On se sert de pstrategy comme compteur et on l'initialise à 0
 
-/* Prend 2 bits m et r et en fait un entier m*2 + r */
-#define MAKE_RM(r, m) ((BOOLVAL(r)<<1) | BOOLVAL(m))
-
-
-typedef struct
-{
-    int unsigned nderef;	/* Période de déréférençage */
-    int unsigned compteur;	/* compteur */
-}NUR;
-
-/*!
- * Creation et initialisation de la stratégie (invoqué par la création de cache).
- * @author Ulysse Riccio
- */
-void *Strategy_Create(struct Cache *pcache)
-{
-    NUR *pstrat = malloc(sizeof(NUR));
-
-    pstrat->nderef = pcache->nderef;
-    pstrat->compteur = pcache->nderef;
-
-    return pstrat;
+void *Strategy_Create(struct Cache *pcache) {
+    return pcache->pstrategy = (int*) 0;
 }
 
-/* FeRMeture de la stratégie
- * @author Ulysse Riccio
- */
 
-void Strategy_Close(struct Cache *pcache)
-{
-    //libere l'allocation de la structure qui se trouve dans pstrategy
-    free(pcache->pstrategy);
-}
+void Strategy_Close(struct Cache *pcache) {}
 
-/* Fonction "réflexe" lors de l'invalidation du cache.
- * @author Ulysse Riccio
- */
+//On réinitialise tous les bits R à 0 puis le compteur
 
-void Strategy_Invalidate(struct Cache *pcache)
-{
-    NUR *pstrat =  (NUR *)(pcache)->pstrategy;
+void Strategy_Invalidate(struct Cache *pcache) {
     int ib;
+    for(ib =0; ib<pcache->nblocks; ib++) {
+        pcache->headers[i].flags = pcache->headers[i].flags & ~REFER;
+    }
+    // Initialisation du compteur puis incrementation du nombre de déréférençages.
+    pcache->pstrategy = 0;
+    ++pcache->instrument.n_deref;
+}
 
-    if (pstrat->nderef != 0)
-    {
-        pstrat->compteur = 1;
+// Determine la valeur qui permet de choisir le bloc à utiliser (moins utilisé)
 
-        // si nderef = 0 on sort
-        if (!(pstrat->nderef == 0 || --pstrat->compteur > 0)) {
-            for (ib = 0; ib < pcache->nblocks; ib++)
-                pcache->headers[ib].flags &= ~0x4;
+int calcul(struct Cache_Block_Header *bloc_non_vide) {
 
-            // On reinitialise le compteur
-            pstrat->compteur = pstrat->nderef;
+    n=2*bloc_non_vide->flags.REFER + bloc_non_vide->flags.MODIF;
+    return n
+}
+
+struct Cache_Block_Header *Strategy_Replace_Block(struct Cache *pcache) {
+
+    struct Cache_Block_Header *bloc_vide = NULL;
+    struct Cache_Block_Header *bloc_non_vide;
+    int min=3;
+
+    // On cherche d'abord un bloc invalide
+    if ((bloc_vide = Get_Free_Block(pcache)) != NULL) return bloc_vide;
+
+    // Sinon on détermine le bloc qui à été le moins utilisé
+    for(ib =0; ib<pcache->nblocks; ib++) {
+        int n=calcul(pcache->headers[ib]);
+        if(n==0)
+            return bloc_non_vide
+        else if (n<min) {
+            min=n;
+            bloc_non_vide =	pcache->headers[ib]
+            else
+            n=3;
+            bloc_non_vide =	pcache->headers[ib]
+
+        }
+        return bloc_non_vide;
+    }
+
+//On passe le bit R (REFER) à 1 lors d'une lecture et on incremente le compteur
+
+    void Strategy_Read(struct Cache *pcache, struct Cache_Block_Header *pbh) {
+
+        // Si le compteur atteint la periode de déréferencement, on reinitialise tous les blocs R à 0
+
+        if(pcache->pstrategy == pcache->nderef) {
+            for (int i = 0; i < pcache->nblocks; ++i) {
+                pcache->headers[i].flags = pcache->headers[i].flags & ~REFER;
+            }
+            pcache->pstrategy = 0;
             ++pcache->instrument.n_deref;
         }
+
+        // On met le bit R à 1
+        pbh->flags = pbh->flags | REFER;
+        ++pcache->pstrategy;
     }
-}
 
-/*  Stratégie de remplacement de bloc
- *  @author Ulysse Riccio
- */
-struct Cache_Block_Header *Strategy_Replace_Block(struct Cache *pcache)
-{
-    int ib;
-    int minimun;
-    struct Cache_Block_Header *pbh_save = NULL;
-    struct  Cache_Block_Header *pbh;
-    int RM;
+//On passe le bit R (REFER) à 1 lors d'une écriture et on incremente le compteur
 
+    void Strategy_Write(struct Cache *pcache, struct Cache_Block_Header *pbh) {
 
-    if ((pbh = Get_Free_Block(pcache)) != NULL) return pbh;
+        // Si le compteur atteint la periode de déréferencement, on reinitialise tous les blocs R à 0
 
-    char inter1,inter2;
-
-    //la valeur de rm la plus petite
-    if ( 1 == 0 )
-        inter1 = 0;
-    if ( 1 == 1 )
-        inter1 = 1;
-    if ( 1 == 0 )
-        inter2 = 0;
-    if ( 1 == 1 )
-        inter2 = 1;
-
-    minimun = (( inter1 << 1 ) | ( inter2 )) + 1;
-
-
-    for ( ib = 0; ib < pcache->nblocks; ib++)
-    {
-        //minimun = MAKE_RM(1, 1) + 1,
-        pbh = &pcache->headers[ib];
-
-
-        if ( (pbh->flags & 0x4) == 0 )
-            inter1 = 0;
-        if ( (pbh->flags & 0x4) == 1 )
-            inter1 = 1;
-        if ( (pbh->flags & 0x2) == 0 )
-            inter2 = 0;
-        if ( (pbh->flags & 0x2) == 1 )
-            inter2 = 1;
-
-        RM = ( inter1 << 1 ) | ( inter2 );
-
-        // RM = MAKE_RM(pbh->flags & 0x4, pbh->flags & MODIF);
-
-        if ( RM == 0 ) return pbh;
-        else if (RM < minimun)
-        {
-            minimun = RM;
-            pbh_save = pbh;
+        if(pcache->pstrategy == pcache->nderef) {
+            for (int i = 0; i < pcache->nblocks; ++i) {
+                pcache->headers[i].flags = pcache->headers[i].flags & ~REFER;
+            }
+            pcache->pstrategy = 0;
+            ++pcache->instrument.n_deref;
         }
+
+        // On met le bit R à 1
+        pbh->flags = pbh->flags | REFER;
+        ++pcache->pstrategy;
     }
-    return pbh_save;
-}
 
-/*! Fonction "réflexe" lors de la lecture.
- *  @author Ulysse Riccio
- */
-void Strategy_Read(struct Cache *pcache, struct Cache_Block_Header *pbh)
-{
-    NUR *pstrat =  (NUR *)(pcache)->pstrategy;
-    int ib;
-
-    // si nderef = 0 on sort
-    if (!(pstrat->nderef == 0 || --pstrat->compteur > 0)) {
-        for (ib = 0; ib < pcache->nblocks; ib++) pcache->headers[ib].flags &= ~0x4;
-
-        // On reinitialise le compteur
-        pstrat->compteur = pstrat->nderef;
-        ++pcache->instrument.n_deref;
+    char *Strategy_Name()
+    {
+        return "NUR";
     }
-    pbh->flags = pbh->flags | 0x4;
-}
-
-/*! Fonction "réflexe" lors de l'écriture.
- *  @author Ulysse Riccio
- *  meme chose que pour read
- */
-void Strategy_Write(struct Cache *pcache, struct Cache_Block_Header *pbh)
-{
-    NUR *pstrat =  (NUR *)(pcache)->pstrategy;
-    int ib;
-
-    // si nderef = 0 on sort
-    if (!(pstrat->nderef == 0 || --pstrat->compteur > 0)) {
-        for (ib = 0; ib < pcache->nblocks; ib++) pcache->headers[ib].flags &= ~0x4;
-
-        // On reinitialise le compteur
-        pstrat->compteur = pstrat->nderef;
-        ++pcache->instrument.n_deref;
-    }
-    pbh->flags = pbh->flags | 0x4;
-}
-
-/*! Retourne le nom de la stratégie ici nur
- *  @author Ulysse Riccio
- */
-char *Strategy_Name()
-{
-    return "NUR";
-}
