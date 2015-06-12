@@ -9,7 +9,7 @@ Test 2 : boucle d'écriture aléatoire
 Ce test ne donne pas de bons résultats et cela pour n'importe quelle stratégie. Lorsque la taille du fichier augmente, la performance des stratégies s'effondre. Cela est dû au fait que l'enregistrement est choisi aléatoirement (probabilité qu'un enregistrement soit dans le cache : taille du cache/taille du fichier).
 
 Test 3 : boucle de lecture/écriture aléatoire
-Il donne des résultats variés. On voit que le hit rate augmente très rapidement et au delà de 100 blocs locaux, il devient négligeable.
+Il donne des résultats variés. On voit que le hit rate augmente très rapidement et au delà de 100 blocs locaux, le gain devient négligeable.
 
 Tests 4 et 5 : boucle de lecture/écriture aléatoire avec localité améliorée
 
@@ -22,7 +22,7 @@ Pour les tests 4 et 5, on a de bons hit rates même pour des toutes petites tail
 3) D'après les courbes des tests 3 à 5, le ratio nb de lectures/nb d'écritures n'a pas d'influence (on obtient des droites constantes). 
 NUR est l'unique stratégie tenant compte des lectures/écritures (avec le bit M).
 
-4) Les résultats du test 3 dépendent du nombre d'enregistrements qui sont accédés localement autour de l'enregistrement courant. Le hit rate augmente très rapidement et au délà de 100 blocs locaux il devient négligeable (plafond à 90%)
+4) Les résultats du test 3 dépendent du nombre d'enregistrements qui sont accédés localement autour de l'enregistrement courant. Le hit rate augmente très rapidement et au délà de 100 blocs locaux gain devient négligeable (plafond à 90%)
 
 5) Working sets : ce nombre représente le nombre de places dans lesquelles le programme a un comportement local (c'est-à-dire que le programme n'accède qu'à des enregistrement de la même zone). On remarque que plus le nombre de phases est grand et plus le programme change de zone. Au début le hit rate est très élevé et puis à partir d'un certain nombre de working sets le hit rate diminue fortement.
 
