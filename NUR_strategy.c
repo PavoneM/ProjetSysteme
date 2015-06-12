@@ -14,11 +14,15 @@
 //On se sert de pstrategy comme compteur et on l'initialise à 0
 
 void *Strategy_Create(struct Cache *pcache) {
-    return pcache->pstrategy = (int*) 0;
+    pcache->pstrategy = (int *) malloc ( sizeof(int) ) ;
+    pcache->pstrategy = 0;
+    return pcache->pstrategy;
 }
 
 
-void Strategy_Close(struct Cache *pcache) {}
+void Strategy_Close(struct Cache *pcache) {
+    free(pcache->pstrategy);
+}
 
 //On réinitialise tous les bits R à 0 puis le compteur
 
