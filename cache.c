@@ -2,6 +2,8 @@
 #include "strategy.h"
 #define debugFonc(text) printf("\e[1;31m%s\e[0m\n",text)
 #define debug(text) printf("\e[1;34m-->%s\e[0m\n",text)
+#define debugHexa(text) printf("\e[1;34m-->%x\e[0m\n",text)
+#define debugInt(text) printf("\e[1;32m-->%d\e[0m\n",text)
 
 // Compteur d'accès (lecture/écriture)
 int nbAccess;
@@ -212,18 +214,16 @@ struct Cache_Block_Header* Cache_Block_Create(struct Cache *pcache, int index){
 		if(block->flags & MODIF){
 
 			// On se positionne au bit où le block commence
-			if(fseek(pcache->fp, DADDR(pcache, block->ibfile), SEEK_SET) != 0)
+		    fseek(pcache->fp, DADDR(pcache, block->ibfile), SEEK_SET);
+
+		    // On ecrit dans le block
+		    if (fwrite(block->data, 1, pcache->blocksz, pcache->fp) != pcache->blocksz)
 				return CACHE_KO;
 
-			// On ajoute les données à data
-			if(fputs(block->data, pcache->fp) == EOF)
-				return CACHE_KO;
-			debug(block->data);
-		}
+		    // On remet le block valide 
+		    block->flags &= ~MODIF;
+		    block->ibfile=index;
 
-		// On écrit dans le fichier
-		if(fseek(pcache->fp, DADDR(pcache, index), SEEK_SET)){
-			return CACHE_KO;
 		}
 
 		fgets(block->data, pcache->blocksz, pcache->fp);
