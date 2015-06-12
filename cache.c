@@ -1,7 +1,7 @@
 #include "low_cache.h"
 #include "strategy.h"
-#define debugFonc(text) //printf("\e[1;31m%s\e[0m\n",text)
-#define debug(text) //printf("\e[1;34m-->%s\e[0m\n",text)
+#define debugFonc(text) printf("\e[1;31m%s\e[0m\n",text)
+#define debug(text) printf("\e[1;34m-->%s\e[0m\n",text)
 
 // Compteur d'accès (lecture/écriture)
 int nbAccess;
@@ -218,6 +218,7 @@ struct Cache_Block_Header* Cache_Block_Create(struct Cache *pcache, int index){
 			// On ajoute les données à data
 			if(fputs(block->data, pcache->fp) == EOF)
 				return CACHE_KO;
+			debug(block->data);
 		}
 
 		// On écrit dans le fichier
