@@ -1,3 +1,8 @@
+/*
+ *	@author Manuel Pavone
+ *	
+ */
+
 #include "low_cache.h"
 #include "strategy.h"
 #define debugFonc(text) printf("\e[1;31m%s\e[0m\n",text)
